@@ -1,19 +1,6 @@
 # ASCII Render Machine
 
-Convert images and videos to ASCII art using shape-vector 6D matching, based on the technique described in [ASCII Rendering](https://alexharri.com/blog/ascii-rendering) by Alex Harri.
-
-## How it works
-
-The algorithm divides each image into a grid of cells. For each cell, it computes a 6-dimensional "shape vector" by measuring average brightness within 6 circular sampling regions arranged in a 2x3 pattern (2 columns, 3 rows, vertically staggered for better coverage).
-
-Every printable ASCII character (32-126) is pre-rendered to a bitmap and sampled identically, producing a lookup table of 6D vectors. For each image cell, the algorithm finds the character whose vector has the minimum Euclidean distance to the cell's vector. The average RGB color of the cell is preserved, so the output is full color.
-
-### Pipeline
-
-1. **Character atlas** -- Render all printable ASCII characters at a fixed font size. Compute 6D shape vectors. Normalize and apply a contrast exponent to sharpen distinctions.
-2. **Image sampling** -- Divide the input image into a grid. For each cell, compute the 6D shape vector from the grayscale channel and the average RGB from the color channels.
-3. **Matching** -- Vectorized nearest-neighbor search in 6D space using expanded Euclidean distance.
-4. **Output** -- Emit as PNG/JPG image, ANSI truecolor terminal text, MP4/GIF video, or JSON.
+ascii-render-machine converts images and videos to full-color ASCII art using the method from [ASCII Rendering](https://alexharri.com/blog/ascii-rendering) by Alex Harri.
 
 ## Installation
 
@@ -25,7 +12,7 @@ cd ascii-render-machine
 uv sync
 ```
 
-Video output requires [ffmpeg](https://ffmpeg.org/) installed on your system.
+Video output also requires [ffmpeg](https://ffmpeg.org/) installed on your system.
 
 ## Quick start
 
@@ -46,9 +33,17 @@ uv run ascii-render-machine video input.mp4 --cols 60 --fps 8 --output result.gi
 uv run ascii-render-machine video input.mp4 --cols 80 --terminal --fps 10
 ```
 
+## Algorithm
+
+A 6D shape vector holds the average grayscale brightness of 6 vertically staggered circular regions in 2 columns and 3 rows.
+
+The character atlas holds the shape vector of each printable ASCII character (32-126), rendered to a bitmap at a fixed font size. The atlas vectors are normalized and raised to a contrast exponent to sharpen character differences.
+
+Each cell of the input grid gets a shape vector and an average RGB color. A vectorized search by expanded Euclidean distance finds the nearest atlas character for each cell. The output draws that character in the cell's color.
+
 ## CLI reference
 
-### `photo` -- Convert a single image
+### `photo` command
 
 ```
 ascii-render-machine photo INPUT [OPTIONS]
@@ -64,7 +59,7 @@ ascii-render-machine photo INPUT [OPTIONS]
 | `--font-size N` | 16 | Font size used for the character atlas and image rendering |
 | `--contrast F` | 1.2 | Contrast exponent for shape vector enhancement |
 
-### `video` -- Convert a video
+### `video` command
 
 ```
 ascii-render-machine video INPUT [OPTIONS]
@@ -84,15 +79,15 @@ ascii-render-machine video INPUT [OPTIONS]
 
 ### Image (photo --output result.png)
 
-Renders ASCII art as colored monospace characters on a black background. Supports any format Pillow can write (PNG, JPG, BMP, TIFF, etc.).
+Colored monospace characters are drawn on a black background and saved in any format Pillow writes (PNG, JPG, BMP, TIFF, etc.).
 
 ### Video (video --output result.mp4)
 
-Each frame is converted to ASCII art, rendered as an image, and piped to ffmpeg for encoding. Supports MP4 (H.264), GIF, and WebM (VP9).
+Each frame is rendered as an ASCII image, and ffmpeg encodes the frames as MP4 (H.264), GIF, or WebM (VP9).
 
 ### Terminal (--terminal)
 
-Prints ANSI truecolor (24-bit) text directly to the terminal. For video, clears the screen between frames for real-time playback.
+Terminal output is ANSI truecolor (24-bit) text. For video, the screen clears between frames for real-time playback.
 
 ### JSON (photo --output result.json)
 
@@ -109,21 +104,19 @@ Prints ANSI truecolor (24-bit) text directly to the terminal. For video, clears 
 
 ## Development
 
-### Type checking
-
-The project uses pyright in strict mode:
+The project type-checks with pyright in strict mode:
 
 ```bash
 uv run pyright
 ```
 
-### Tests
+Run the tests:
 
 ```bash
 uv run pytest
 ```
 
-### Generate the sample image
+Regenerate the sample image:
 
 ```bash
 uv run python examples/generate_sample.py
@@ -131,11 +124,11 @@ uv run python examples/generate_sample.py
 
 ## Dependencies
 
-- [Pillow](https://pillow.readthedocs.io/) -- Image loading, character bitmap rendering, and image output
-- [opencv-python-headless](https://github.com/opencv/opencv-python) -- Video frame extraction
-- [NumPy](https://numpy.org/) -- Vectorized shape vector computation and matching
-- [ffmpeg](https://ffmpeg.org/) -- Video encoding (system dependency, required for video output only)
+- [Pillow](https://pillow.readthedocs.io/) for image I/O and character bitmaps
+- [opencv-python-headless](https://github.com/opencv/opencv-python) for video frame extraction
+- [NumPy](https://numpy.org/) for vectorized math and matching
+- [ffmpeg](https://ffmpeg.org/) for video encoding (system dependency, needed only for video output)
 
 ## License
 
-MIT -- see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
